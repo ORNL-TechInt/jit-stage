@@ -1,0 +1,320 @@
+Software Requirements Specification for {Project}
+===================================================
+:Author: Mitch Griffith 
+:Email: griffithmr1@ornl.gov
+:Date: 2015-02-04
+:Revision: 0.1
+:Organization: National Center for Computational Sciences at the Oak Ridge +
+National Laboratory
+:Project: jitStage
+
+This paper used the resources of the Oak Ridge Leadership Computing
+Facility, located in the National Center for Computational Sciences at the
+Oak Ridge National Laboratory, which is managed by UT Battelle, LLC for
+the U.S. Department of Energy, under the contract No. DEAC05-00OR22725.
+
+:numbered!:
+Revision History
+----------------
+.Revision History
+[options="header"]
+|===========================================================================
+|Name           | Date       | Reason For Change                   | Version
+|Mitch Griffith | 2015-02-04 | initial version                     | 0.1
+|===========================================================================
+
+:numbered:
+Introduction
+------------
+Background
+~~~~~~~~~~
+Over the years, computing resource storage, or scratch area, has been 
+limited in the amount of total data that can be stored.  HPSS provides
+long-term archival storage for users and projects.  Archival storage
+space allows users to keep their data longer than on scratch areas.  
+Purge policies in place on scratch areas require users to move data 
+between HPSS and the scratch areas to ensure the data is not lost.  Due 
+to the need to transfer data between HPSS and scratch areas, users are
+burdened with the need to transfer data from HPSS to scratch, make sure
+the job runs before the data is purged from scratch, and collect their
+data.
+
+This process has made data analysis difficult for the user simply because
+of the time required to move the data:
+
+* it is not feasible to move data during job execution because we cannot
+be assured HPSS will be available.
+* we also do not know how long the transfer will take
+* hardware may not be available
+
+As a result, we need to come up with a solution.
+
+Purpose
+~~~~~~~
+We have a need to help users with getting an analysis job pushed through
+our analysis cluster while reducing the burden on the user.  The user
+should be able to submit the job, and not have to worry about it until
+the job is complete.
+
+{Project} is our proposed solution to the problem.
+
+Scope
+~~~~~
+The {Project} is a client-server architecture implementation that will
+help facilitate a user running an analysis job.  This project is limited
+to Linux operating systems and x86_64 architectures.  The final product
+should be available to all National Center for Computational
+Sciences(NCCS) user facing systems.  
+
+We will make any products available to other institutions as well.  As a
+result, we will need to adopt an appropriate license for any software
+developed.  
+
+Design Choices
+~~~~~~~~~~~~~~
+For our work at NCCS, we have the option of doing several things.  
+
+* For instance, we can stage data in HPSS to the top level disk cache and 
+create a purge lock for this file.  When the job is expected to start, we can
+then transfer the file from HPSS to scratch.
+* transfer data from HPSS to scratch and not worry about the purge lock in
+HPSS
+* for scratch purging options, we can simply touch the files that we are
+keeping track of instead of a general purge exception for the entire
+directory.
+
+Overall Description
+-------------------
+The idea behind {Project} is to provide a server that is capable of
+submitting _jobs_ to different resource managers like LSF and
+PBS/torque as the end user.  The server will also be able to query jobs
+and make policy based decisions based on query results.
+
+Product Perspective
+~~~~~~~~~~~~~~~~~~~
+The system will consist of 2 parts: the client and a server.  The server
+runs on a server and is responsible for coordinating job executions, file
+retrievals, and storage purging. The client will communicate with the
+server to submit jobs, check status of jobs, and termination of jobs.
+
+The server will need to communicate with a database back-end.  All relevant
+logs, server status, server configuration, purge locks, and file system
+purge exemptions will be kept in the database.  Archiving older data will
+be possible to keep the overall size of the database reasonable for the
+application.
+
+The client will need to authenticate to the server in some way to
+identify the user.  This is needed because the server shall have the
+ability to submit jobs, through the resource manager running at the
+center, as the user.
+
+Product Functions
+~~~~~~~~~~~~~~~~~
+With the client application, users will be able to submit jobs to
+{Project} and the server will handle coordinating with scratch space
+purging and archival storage purge locks.  Users will also be able to
+query the status of all jobs submitted to {Product} and determine their
+position in the queue.  Users will also be able to delete their job if it
+is not completed.  A job shall be able to be removed from execution until
+the point where their job completes either successfully or with error.
+
+An API will be provided to allow hooks into the server to allow custom
+code to be written to handle scratch and archival storage purge exemptions
+and purge locks.
+
+The server will use a customized template to submit jobs on the user's
+behalf.
+
+User Characteristics
+~~~~~~~~~~~~~~~~~~~~
+There are 3 types of users that interact with the system: end users,
+storage coordinator, and administrators.  Each type of user will use the
+system in different ways so each one has a different set of requirements.
+
+End users interaction will only use the client to submit, query, modify,
+and delete jobs.  The user will have the ability to search all jobs and
+query only their jobs.  
+
+Administrators will not have any special ability in the client, but they
+will have access to additional reporting and configuration commands on the
+server machine.  The configuration commands will allow the administrator to 
+configure the server with specific policies at the site location.  The
+reporting commands will allow the administrator to view reports about
+current status of the service, and view reports relevant to the daily
+operation of the service.
+
+Storage coordinator APIs will allow external scripts/programs to be
+written to help mitigate purging on scratch areas and setting purge locks
+on the archival storage system.  The APIs will use a programmable
+authentication mechanism to support scripting.
+
+Constraints
+~~~~~~~~~~~
+The application is being developed for a Red Hat Enterprise Linux(RHEL)
+version 6 X86_64 architecture.  We will do our best to ensure the servers
+and client can run on other Linux operating systems, but in order to meet
+our goals, we are limiting initial development to the infrastructure at
+the NCCS.
+
+The application will also be constrained by the capacity of the database.
+It is possible to overload a database with a lot of queries that would
+force queuing the incoming requests that would increase the amount of time
+to fetch data.
+
+The application will also use a MySQL database since this is what NCCS
+supports at this time.
+
+Operating Environment
+~~~~~~~~~~~~~~~~~~~~~
+The application will be developed for a RHEL 6 x86_64.  It will use the
+RHEL6 provided software to build and run.  The application shall also
+require a MySQL database to hold configuration, historical, and current
+state information.  
+
+Design Implementation Constraints
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+{Product} shall be built to meet NCCS security requirements.  
+
+* configurable to have encrypted communication between server and client
+* configurable to have encrypted database connection
+* configurable to 
+* be SE Linux compatible (limit the amount of requirements for SE Linux to
+work correctly with the {Project}.
+
+In order to fit into NCCS infrastructure, the application shall create
+RPMs for easier integration into software management.
+
+User Documentation
+~~~~~~~~~~~~~~~~~~
+The application shall include:
+
+* _man_ page for the client application that will list all available options
+  and a brief description.
+* Installation Guide - how to install the software and configure options
+* Management Guide - how to manage the system and check status of the
+application
+* API Guide - how to use the API for scratch and archival storage purge
+exemptions and locking
+
+External Interface Requirements
+-------------------------------
+
+User Interfaces
+~~~~~~~~~~~~~~~
+A user will be able to use a command-line interface (CLI) to submit jobs.
+
+Hardware Interfaces
+~~~~~~~~~~~~~~~~~~~
+The software shall be designed to run on an RHEL6 x86_64 machine.  The
+software will not have any designated hardware, as a result it does not
+have any direct hardware inerfaces.  All hardware interfaces is expected
+to be managed by the operating system.
+
+Software Interfaces
+~~~~~~~~~~~~~~~~~~~
+The server application will communicate with the MySQL database using the
+MySQL connector API provided by MySQL.  
+
+Communications Interfaces
+~~~~~~~~~~~~~~~~~~~~~~~~~
+The API will use a Representational State Transfer (REST) API.  We have to
+create this API from the server applciation.
+
+The client application will communicate with the server via encrypted
+SSL.
+
+System Features
+---------------
+
+Client Application
+~~~~~~~~~~~~~~~~
+
+Submit a job
+^^^^^^^^^^^^
+
+Description and Priority
+++++++++++++++++++++++++
+Users need to be able to submit jobs to {Project}
+TITLE: Hi There +
+DESC: A quick and dirty description +
+RAT: reasoning behind the functional requirement +
+DEP: None +
+
+System Feature 2
+~~~~~~~~~~~~~~~~
+blah
+
+Other Nonfunctional Requirements
+--------------------------------
+blah
+
+Performance Requirements
+~~~~~~~~~~~~~~~~~~~~~~~~
+blah
+
+Safety Requirements
+~~~~~~~~~~~~~~~~~~~
+blah
+
+Security Requirements
+~~~~~~~~~~~~~~~~~~~~~
+blah
+
+Software Quality Attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+blah
+
+Business Rules
+~~~~~~~~~~~~~~
+blah
+
+Other Requirements
+------------------
+blah
+
+:numbered!:
+[appendix]
+Glossary
+--------
+
+[glossary]
+NCCS::
+  National Center for Computational Sciences
+
+OLCF::
+  Oak Ridge Leadership Computing Facility
+
+RHEL::
+  Red Hat Enterprise Linux
+
+
+[appendix]
+Acknowledgments
+---------------
+Sections of this paper are based upon the IEEE Guide to Software
+Requirements Specification (ANSI/IEEE Std. 830-1984).
+
+This paper used the resources of the Oak Ridge Leadership Computing
+Facility, located in the National Center for Computational Sciences at the
+Oak Ridge National Laboratory, which is managed by UT Battelle, LLC for
+the U.S. Department of Energy, under the contract No. DEAC05-00OR22725.
+
+[appendix]
+Analysis Models
+---------------
+blah
+
+[appendix]
+To Be Determined List
+---------------------
+blah
+
+ifdef::backend-docbook[]
+[index]
+Example Index
+-------------
+////////////////////////////////////////////////////////////////
+The index is normally left completely empty, it's contents being
+generated automatically by the DocBook toolchain.
+////////////////////////////////////////////////////////////////
+endif::backend-docbook[]
