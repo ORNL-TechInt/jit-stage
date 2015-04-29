@@ -1,8 +1,8 @@
-Software Requirements Specification for {Project}
+Software Requirements Specification for {Project} 
 ===================================================
 :Author: Mitch Griffith 
 :Email: griffithmr1@ornl.gov
-:Date: 2015-02-04
+:Date: 2015-03-03
 :Revision: 0.1
 :Organization: National Center for Computational Sciences at the Oak Ridge +
 National Laboratory
@@ -29,10 +29,10 @@ Introduction
 Background
 ~~~~~~~~~~
 Over the years, computing resource storage, or scratch area, has been 
-limited in the amount of total data that can be stored.  HPSS provides
-long-term archival storage for users and projects.  Archival storage
-space allows users to keep their data longer than on scratch areas.  
-Purge policies in place on scratch areas require users to move data 
+limited in the amount of total data that can be stored.  HPSS provides a
+solution to allow long-term archival storage for users and projects.  
+Archival storage space allows users to keep their data longer than on scratch
+areas.  Purge policies in place on scratch areas require users to move data 
 between HPSS and the scratch areas to ensure the data is not lost.  Due 
 to the need to transfer data between HPSS and scratch areas, users are
 burdened with the need to transfer data from HPSS to scratch, make sure
@@ -43,7 +43,7 @@ This process has made data analysis difficult for the user simply because
 of the time required to move the data:
 
 * it is not feasible to move data during job execution because we cannot
-be assured HPSS will be available.
+be assured HPSS will be available
 * we also do not know how long the transfer will take
 * hardware may not be available
 
@@ -53,7 +53,7 @@ Purpose
 ~~~~~~~
 We have a need to help users with getting an analysis job pushed through
 our analysis cluster while reducing the burden on the user.  The user
-should be able to submit the job, and not have to worry about it until
+should be able to submit the job, and not have to worry about the job until
 the job is complete.
 
 {Project} is our proposed solution to the problem.
@@ -76,7 +76,9 @@ For our work at NCCS, we have the option of doing several things.
 
 * For instance, we can stage data in HPSS to the top level disk cache and 
 create a purge lock for this file.  When the job is expected to start, we can
-then transfer the file from HPSS to scratch.
+then transfer the file from HPSS to scratch.  This way we do not have to
+worry about the transfer time from tape to disk.  Tape resources are not
+required at this point.
 * transfer data from HPSS to scratch and not worry about the purge lock in
 HPSS
 * for scratch purging options, we can simply touch the files that we are
@@ -85,17 +87,17 @@ directory.
 
 Overall Description
 -------------------
-The idea behind {Project} is to provide a server that is capable of
-submitting _jobs_ to different resource managers like LSF and
+The idea behind {Project} is to provide a client/server design that is 
+capable of submitting _jobs_ to different resource managers like LSF and
 PBS/torque as the end user.  The server will also be able to query jobs
 and make policy based decisions based on query results.
 
 Product Perspective
 ~~~~~~~~~~~~~~~~~~~
 The system will consist of 2 parts: the client and a server.  The server
-runs on a server and is responsible for coordinating job executions, file
-retrievals, and storage purging. The client will communicate with the
-server to submit jobs, check status of jobs, and termination of jobs.
+runs on an indendant machine, and it is responsible for coordinating job 
+executions, file retrievals, and storage purging. The client will communicate
+with the server to submit jobs, check status of jobs, and termination of jobs.
 
 The server will need to communicate with a database back-end.  All relevant
 logs, server status, server configuration, purge locks, and file system
@@ -231,46 +233,32 @@ Client Application
 
 Submit a job
 ^^^^^^^^^^^^
-
-Description and Priority
-++++++++++++++++++++++++
-Users need to be able to submit jobs to {Project}
-TITLE: Hi There +
+TITLE: Users need to be able to submit jobs to {Project} +
 DESC: A quick and dirty description +
 RAT: reasoning behind the functional requirement +
 DEP: None +
 
 System Feature 2
 ~~~~~~~~~~~~~~~~
-blah
+TITLE: +
+DESC: +
+RAT: +
+DEP: +
 
 Other Nonfunctional Requirements
 --------------------------------
-blah
 
 Performance Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~
-blah
+The system should respond reasonably well under load.
 
 Safety Requirements
 ~~~~~~~~~~~~~~~~~~~
-blah
 
 Security Requirements
 ~~~~~~~~~~~~~~~~~~~~~
-blah
-
-Software Quality Attributes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-blah
-
-Business Rules
-~~~~~~~~~~~~~~
-blah
-
-Other Requirements
-------------------
-blah
+The system shall not expose any underlying strucutre to the client so we can
+limit use.
 
 :numbered!:
 [appendix]
@@ -298,16 +286,6 @@ This paper used the resources of the Oak Ridge Leadership Computing
 Facility, located in the National Center for Computational Sciences at the
 Oak Ridge National Laboratory, which is managed by UT Battelle, LLC for
 the U.S. Department of Energy, under the contract No. DEAC05-00OR22725.
-
-[appendix]
-Analysis Models
----------------
-blah
-
-[appendix]
-To Be Determined List
----------------------
-blah
 
 ifdef::backend-docbook[]
 [index]
