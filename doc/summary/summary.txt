@@ -71,12 +71,12 @@ to HPSS after a run.
 
 Team
 ----
-The team includes Mitch Griffith, Vicky White, Tom Barron, and Deryl Steinert.
-Mitch will coordinate with Chris Fuson, Suzanne Parete-Koon, and Bill
-Renaud from User Assistance and Outreach Group (UAOG), Arnold Tharrington
-from Scientific Computing Group (SciComp), and the Infrastructure Team in the
-HPC-Ops Group for requirements input and gettting the final product in
-production at the OLCF.
+The team includes Mitch Griffith.  He is getting support from Vicky White, 
+Tom Barron, and Deryl Steinert.  Mitch will coordinate with Chris Fuson, 
+Suzanne Parete-Koon, and Bill Renaud from User Assistance and Outreach
+Group (UAOG), Arnold Tharrington from Scientific Computing Group (SciComp),
+and the Infrastructure Team in the HPC-Ops Group for requirements input and
+gettting the final product in production at the OLCF.
 
 Metrics for Success
 -------------------
