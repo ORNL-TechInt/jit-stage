@@ -8,6 +8,7 @@ pdf: summary.txt
 
 clean:
 	@if [ -e "summary.html" ]; then rm summary.html; fi
+	@if [ -e "summary.pdf" ]; then rm summary.pdf; fi
 
 check: 
 	@echo "spellcheck summary.txt...";
