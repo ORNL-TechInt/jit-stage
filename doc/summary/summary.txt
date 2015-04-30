@@ -1,84 +1,90 @@
-{Project} 
-===================================================
-:Author: Mitch Griffith 
+////
+* Traceability
+*     Date      Who  Description
+*     04/29/15  mrg  initial version
+////
+{Project}
+=========
+:Author: Mitch Griffith
 :Email: griffithmr1@ornl.gov
 :Date: 2015-04-29
 :Revision: 0.1
-:Organization: National Center for Computational Sciences at the Oak Ridge 
-+ National Laboratory
-:Project: jitStage
+:Organization: National Center for Computational Sciences at the Oak Ridge National Laboratory
+:Project: jit-stage
 
 This paper used the resources of the Oak Ridge Leadership Computing
 Facility, located in the National Center for Computational Sciences at the
 Oak Ridge National Laboratory, which is managed by UT Battelle, LLC for
 the U.S. Department of Energy, under the contract No. DEAC05-00OR22725.
 
-Revision History
-----------------
-.Revision History
-[options="header"]
-|===========================================================================
-|Name           | Date       | Reason For Change                   | Version
-|Mitch Griffith | 2015-04-29 | initial version                     | 0.1
-|===========================================================================
-
 {Project} is a Just In Time Staging tool that allows users to request HPSS
 data to be staged to their project-centric work directories (Spider)
 before a job is run/executed on Oak Ridge Leadership Computing Facility
 (OLCF) computing resources.  
 
-Problem Being Addresses
-~~~~~~~~~~~~~~~~~~~~~~~
-Users have expressed concern about trying to run a job on OLCF computing
-resources and their data is purged from Spider before their job is even
-scheduled to run (due to long wait times on the computing resource
-schedulers and time to actually transfer the data from HPSS).  It
+Problem Being Addressed
+-----------------------
+OLCF Users have expressed concern about trying to run a job on computing
+resources. Users are seeing their data being purged from Spider before their
+job is even scheduled to run (due to long wait times on the computing resource
+schedulers and time to actually transfer the data from HPSS).  It can
 potentially takes a long time to move data from HPSS to Spider, especially
 if we are talking about a significant amount of data.  It takes about 6
-hours to transfer 10TB from HPSS to Spider
- at a speed of ~500MB/s.  All jobs, even data transfer jobs on the Data
-Transfer Node (DTN) cluster, are limited to 24-hour runtimes.  It is very
-conceivable to require more than 24 hours to transfer a significant amount
-of data.  And if an error causes a transfer to abort and require a data
-transfer restart, we would require additional jobs to transfer data from
-HPSS to Spider.  Based on the availability of the DTN, it is possible data
-will be deleted due to the 14-day purge policy implemented on Member Work
-and World Work areas.  Jit-stage will allow users to stage data without
-the concern of having their data purged before the job runs.
+hours to transfer 10TB from HPSS to Spider at a speed of ~500MB/s. 
+
+All jobs, even data transfer jobs on the Data Transfer Node (DTN) cluster, are
+limited to 24-hour run-times.  The 24-hour time limit is a bottleneck when
+the amount of data is around 24TB.  And if an error causes a transfer to abort
+and require a data transfer restart, we would require additional jobs to
+transfer data from HPSS to Spider.  There is a need for a data
+orchestrator to move the data automatically for users.
+
+Based on the availability of the DTN and the compute job's wait time, it
+is possible that the user's data will be deleted due to the 14-day purge
+policy implemented on Member Work and World Work areas
+footnote:[https://www.olcf.ornl.gov/computing-resources/data-management/data-management-user-guide/#2705].
+{Project} will allow users to stage data without the concern of having their
+data purged before the job runs.
 
 Audience
-~~~~~~~~
-OLCF users wanting to run analysis jobs are the main audience for the
-jit-stage tool.  We also have a plan to grab statistic information from
-the runs as well.  Since users will have to submit a job, we can
-accurately measure how much data is associated with a project on a run (at
-least for the data input side).  We hope to use this additional
-information to understand how projects use and archive data for future
-analysis.
+--------
+OLCF users with data in HPSS that needs to be analyzed are the main 
+audience for the {Project} tool.  We also have a plan to grab
+statistic information from the runs as well.  Since users will have to
+submit a job, we can accurately measure how much data is associated with
+a project on a run (at least for the data input side).  We hope to use
+this additional information to understand how projects use and archive
+data for future analysis.
 
 Solution
-~~~~~~~~
-We plan to build a server that allows users to submit to it, the data is
-staged to Spider, purge policies from Spider are modified to not see
-staged data as eligible to be deleted until the job completes.  This will
+--------
+We plan to build a server that allows users to submit jobs to it.  The
+server will act as a data orchestrator and pull the data from HPSS to
+Spider.  Spider's purge policies will be modified to ignore staged data
+and not count it as eligible to be deleted until the job completes.  This will
 help ensure that users have at least (14 days – runtime) to get their
-output data after the job is complete.  It may also make sense to allow
-the user to archive their data to HPSS as well. 
+output data after the job is complete.
+
+A follow on to this solution would be to allow the user to archive their data
+to HPSS after a run.
+
+We also plan to investigate prestaging data to HPSS disk cache in cases
+where data staging can and should be incorporated to the run itself.
 
 Team
-~~~~
-The team includes Mitch Griffith, Vicky White, Tom Barron, Deryl Steinert.
-Mitch will coordinate with Chris Fuson, Suzanne Parate-Koon, and Bill
+----
+The team includes Mitch Griffith, Vicky White, Tom Barron, and Deryl Steinert.
+Mitch will coordinate with Chris Fuson, Suzanne Parete-Koon, and Bill
 Renaud from User Assistance and Outreach Group (UAOG), Arnold Tharrington
-from Scientific Computing Group, and the infrastructure team in the HPC
-Ops group.
+from Scientific Computing Group (SciComp), and the Infrastructure Team in the
+HPC-Ops Group for requirements input and gettting the final product in
+production at the OLCF.
 
 Metrics for Success
-~~~~~~~~~~~~~~~~~~~
-We have at least one person using the tool.  We measure the amount of
-tickets sent to the UAOG, and determine the level of issues seen by the
-tool and the amount of time to resolve issues seen with users.  Also want
-to see how many jobs are waiting to be scheduled before the job can run.
-It would also be interesting to see how much data we can handle and where
-it is going.  For instance, if a user wants to stage 3 PB, but we only
-have 2PB available, what do we do?
+-------------------
+After {Project} is installed, we will look at the number of users running
+it.  We should have at least one user using it.  The plan also includes
+looking at the number of tickets sent to the UAOG, and determines the
+number of issues seen by users regarding {Project}.  We will also look at
+resolution time when we learn of a problem with {Project} and issue a
+resolution or plan to resolve the issue.  
