@@ -2,6 +2,7 @@
 * Traceability
 *     Date      Who  Description
 *     04/29/15  mrg  initial version
+*     04/30/15  mrg  Changes Vicky mention in email from her review
 ////
 {Project}
 =========
@@ -34,7 +35,7 @@ hours to transfer 10TB from HPSS to Spider at a speed of ~500MB/s.
 
 All jobs, even data transfer jobs on the Data Transfer Node (DTN) cluster, are
 limited to 24-hour run-times.  The 24-hour time limit is a bottleneck when
-the amount of data is around 24TB.  And if an error causes a transfer to abort
+the amount of data is around 41TB.  And if an error causes a transfer to abort
 and require a data transfer restart, we would require additional jobs to
 transfer data from HPSS to Spider.  There is a need for a data
 orchestrator to move the data automatically for users.
@@ -62,14 +63,11 @@ We plan to build a server that allows users to submit jobs to it.  The
 server will act as a data orchestrator and pull the data from HPSS to
 Spider.  Spider's purge policies will be modified to ignore staged data
 and not count it as eligible to be deleted until the job completes.  This will
-help ensure that users have at least (14 days – runtime) to get their
+help ensure that users have at least (14 days - runtime) to get their
 output data after the job is complete.
 
 A follow on to this solution would be to allow the user to archive their data
 to HPSS after a run.
-
-We also plan to investigate prestaging data to HPSS disk cache in cases
-where data staging can and should be incorporated to the run itself.
 
 Team
 ----
@@ -87,4 +85,6 @@ it.  We should have at least one user using it.  The plan also includes
 looking at the number of tickets sent to the UAOG, and determines the
 number of issues seen by users regarding {Project}.  We will also look at
 resolution time when we learn of a problem with {Project} and issue a
-resolution or plan to resolve the issue.  
+resolution or plan to resolve the issue.  We will also review the annual OLCF
+User Survey and check the results for any mention of data staging and if the
+tool is helping their workflow or hindering it.
