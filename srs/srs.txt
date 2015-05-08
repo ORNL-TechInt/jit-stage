@@ -28,33 +28,36 @@ Introduction
 ------------
 Background
 ~~~~~~~~~~
-Over the years, computing resource storage, or scratch area, has been 
-limited in the amount of total data that can be stored.  HPSS provides a
-solution to allow long-term archival storage for users and projects.  
-Archival storage space allows users to keep their data longer than on scratch
-areas.  Purge policies in place on scratch areas require users to move data 
-between HPSS and the scratch areas to ensure the data is not lost.  Due 
-to the need to transfer data between HPSS and scratch areas, users are
-burdened with the need to transfer data from HPSS to scratch, make sure
-the job runs before the data is purged from scratch, and collect their
-data.
+Over the years at the National Center for Computational Sciences (NCCS) located at
+Oak Ridge National Laboratory (ORNL),
+computing resource storage, or scratch area, has been limited in the
+total amount of data that can be stored for immediate access.  HPSS
+provides a solution to allow long-term archival storage space to users and
+projects.  Archival storage space allows users to keep their
+data longer and more reliably than on scratch areas.  Purge policies in
+place on scratch areas require users to move data between HPSS and the
+scratch areas to ensure the data is not lost.  With this requirement
+users must, transfer data from HPSS to the scratch area(s), ensure the
+data is not purged from the scratch area(s) until the job runs, once the
+job is complete, the user needs to do _something_ with the data.
+Typically, the user will archive the data to HPSS.
 
-This process has made data analysis difficult for the user simply because
-of the time required to move the data:
+This process has made data analysis and simply running jobs difficult for
+the user because:
 
-* it is not feasible to move data during job execution because we cannot
-be assured HPSS will be available
-* we also do not know how long the transfer will take
-* hardware may not be available
+* It is not feasible to move data during job execution because we are not
+assured HPSS will be available (scheduled/unscheduled downtimes).
+* We do not know how long the transfer will take (variablity in
+network and resource contention).
+* Resources may not be available (scratch area is full).
 
-As a result, we need to come up with a solution.
 
 Purpose
 ~~~~~~~
-We have a need to help users with getting an analysis job pushed through
-our analysis cluster while reducing the burden on the user.  The user
-should be able to submit the job, and not have to worry about the job until
-the job is complete.
+We have a need to help users with getting analysis jobs pushed through
+our analysis cluster while removing the burden of moving data from the user.
+The user should be able to submit the job, and not have to worry if the
+data will be available when the jobs runs.
 
 {Project} is our proposed solution to the problem.
 
@@ -66,31 +69,33 @@ to Linux operating systems and x86_64 architectures.  The final product
 should be available to all National Center for Computational
 Sciences(NCCS) user facing systems.  
 
-We will make any products available to other institutions as well.  As a
-result, we will need to adopt an appropriate license for any software
-developed.  
+We will make any products developed for this purpose available to other
+institutions as well.  As a result, we will need to adopt an appropriate
+license for any software developed.  
 
 Design Choices
 ~~~~~~~~~~~~~~
-For our work at NCCS, we have the option of doing several things.  
+For our work at the NCCS, we have the option of doing several things.  For
+instance:
 
-* For instance, we can stage data in HPSS to the top level disk cache and 
+* We can stage data in HPSS to the top level disk cache and 
 create a purge lock for this file.  When the job is expected to start, we can
 then transfer the file from HPSS to scratch.  This way we do not have to
 worry about the transfer time from tape to disk.  Tape resources are not
-required at this point.
-* transfer data from HPSS to scratch and not worry about the purge lock in
-HPSS
-* for scratch purging options, we can simply touch the files that we are
+required at this point.  
+* Transfer data from HPSS to scratch and not worry about the purge lock in
+HPSS.
+* For scratch purging options, we can simply touch the files that we are
 keeping track of instead of a general purge exception for the entire
 directory.
 
+
 Overall Description
 -------------------
-The idea behind {Project} is to provide a client/server design that is 
+The idea behind {Project} is to implement a client/server interface that is 
 capable of submitting _jobs_ to different resource managers like LSF and
 PBS/torque as the end user.  The server will also be able to query jobs
-and make policy based decisions based on query results.
+and make policy based decisions based on those query results.
 
 Product Perspective
 ~~~~~~~~~~~~~~~~~~~
@@ -101,13 +106,14 @@ with the server to submit jobs, check status of jobs, and termination of jobs.
 
 The server will need to communicate with a database back-end.  All relevant
 logs, server status, server configuration, purge locks, and file system
-purge exemptions will be kept in the database.  Archiving older data will
-be possible to keep the overall size of the database reasonable for the
-application.
+purge exemptions will be kept in this database back-end.  We will
+archive/purge older data to keep the overall size of the database
+reasonable for the application.
 
-The client will need to authenticate to the server in some way to
-identify the user.  This is needed because the server shall have the
-ability to submit jobs, through the resource manager running at the
+The client will need to authenticate to the server in some way (yet to be
+determinted) to authenticate the request.  This is needed because the
+server shall have the ability to submit jobs to ORNL computing/data
+resouces.
 center, as the user.
 
 Product Functions
@@ -271,6 +277,9 @@ NCCS::
 
 OLCF::
   Oak Ridge Leadership Computing Facility
+
+ORNL::
+  Oak Ridge National Laboratory
 
 RHEL::
   Red Hat Enterprise Linux
