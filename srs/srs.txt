@@ -28,8 +28,8 @@ Introduction
 ------------
 Background
 ~~~~~~~~~~
-Over the years at the National Center for Computational Sciences (NCCS) located at
-Oak Ridge National Laboratory (ORNL),
+Over the years at the National Center for Computational Sciences (NCCS)
+located at Oak Ridge National Laboratory (ORNL),
 computing resource storage, or scratch area, has been limited in the
 total amount of data that can be stored for immediate access.  HPSS
 provides a solution to allow long-term archival storage space to users and
@@ -50,6 +50,63 @@ assured HPSS will be available (scheduled/unscheduled downtimes).
 * We do not know how long the transfer will take (variablity in
 network and resource contention).
 * Resources may not be available (scratch area is full).
+
+MOAB
+^^^^
+We currently run MOAB and Torque on all of our compute resources at NCCS.
+MOAB 8 includes a new way of doing data staging on its compute resources.
+We were able to install MOAB 8 on a test system.
+
+In further review of the data staging feature, we discovered that msub was
+required to take advantage of the new data staging features.  Msub
+requires you submit to the MOAB scheduler directly instead of Torque.
+This would require too much modification on behalf of all users since msub
+is disabled at the NCCS to help simplify user interaction on the systems.
+
+MOAB uses a file to indicate where to get the data, and requires the data
+to be accessible without extra authentication.  This would work for us
+with HPSS data since all users has passwordless access to HPSS by default.
+It gets more difficult if we wanted to allow users to copy from file
+systems that are not on the same machine, i.e. remote copy.  This would
+require additional thought in how to authenticate the user to secure the
+data properly.
+
+MOAB Implementation Issues
+++++++++++++++++++++++++++
+MOAB does not provide a method to make a file/directory purge exempt.
+There is no concept of puragable areas in MOAB.  This makes it difficult
+to tie into job submission to allow needed data for a job to remain on the
+scratch areas without the purge policy potentially erasing the data before
+the job is complete.
+
+It is also unclear in how scheduling is done.  MOAB allows you to set a
+transfer size and bandwidth to the data store (in our case this is HPSS).
+The issue we have is the resulting bandwidth may be more for large files
+or less for smaller files.  It is also difficult to determine the time it
+takes to transfer a file if it is on tape.  A user, or more likely a set
+of users, could be using all tape drives and blocking the current
+transfer.  Since there is no direct way to integrate with external
+resources, it is not clear as to how to account for data that might be on
+tape.  It is possible, but not likely, that it takes so long to transfer
+the data that we hit the purge policy limit and data intended for job
+execution is purged before the job ever uses it.  
+
+We may also have periods of blocking utilization on the compute resources.
+If MOAB schedules the job at 1:00 PM, and based on the size of the file
+and bandwidth to the scratch area, MOAB determines it will take 1 hour to
+transfer the file.
+
+* MOAB will schedule the job to start at 1:00 PM.
+* MOAB will start transferring the file at 12:00 PM.
+* File actually takes 2 hours to transfer.
+* The job does not start until 2:00 PM
+* This can potentially block jobs that could have run in that hour from
+starting 
+
+We know we cannot block utilization based on what when we expect the
+transfer to be complete.  We have sponsors that require a specific
+utilization on the compute resources.  We just need a better way to manage
+data resources to help ensure that we meet all requirements.
 
 
 Purpose
@@ -80,11 +137,11 @@ instance:
 
 * We can stage data in HPSS to the top level disk cache and 
 create a purge lock for this file.  When the job is expected to start, we can
-then transfer the file from HPSS to scratch.  This way we do not have to
-worry about the transfer time from tape to disk.  Tape resources are not
+then transfer the file from HPSS to scratch.  This way we remove the time it
+takes to transfer from tape to disk from problem.  Tape resources are not
 required at this point.  
 * Transfer data from HPSS to scratch and not worry about the purge lock in
-HPSS.
+HPSS.  This can cause issues about filling up scratch space.
 * For scratch purging options, we can simply touch the files that we are
 keeping track of instead of a general purge exception for the entire
 directory.
@@ -105,41 +162,80 @@ executions, file retrievals, and storage purging. The client will communicate
 with the server to submit jobs, check status of jobs, and termination of jobs.
 
 The server will need to communicate with a database back-end.  All relevant
-logs, server status, server configuration, purge locks, and file system
-purge exemptions will be kept in this database back-end.  We will
-archive/purge older data to keep the overall size of the database
+configuration, logs, server status, server configuration, purge locks,
+and file system purge exemptions will be kept in this database back-end.
+We will archive/purge older data to keep the overall size of the database
 reasonable for the application.
 
 The client will need to authenticate to the server in some way (yet to be
 determinted) to authenticate the request.  This is needed because the
 server shall have the ability to submit jobs to ORNL computing/data
-resouces.
-center, as the user.
+resouces as the user.
 
 Product Functions
 ~~~~~~~~~~~~~~~~~
-With the client application, users will be able to submit jobs to
-{Project} and the server will handle coordinating with scratch space
-purging and archival storage purge locks.  Users will also be able to
-query the status of all jobs submitted to {Product} and determine their
-position in the queue.  Users will also be able to delete their job if it
-is not completed.  A job shall be able to be removed from execution until
-the point where their job completes either successfully or with error.
+With the client application, users will be able:
 
-An API will be provided to allow hooks into the server to allow custom
-code to be written to handle scratch and archival storage purge exemptions
+* submit jobs to {Project} 
+* query job status
+* delete their queued jobs
+
+The server will handle coordinating with scratch space purging and archival
+storage purge locks.  
+
+We will need to work with the scratch filesystems to develop an API that will
+allow custom handling of scratch and archival storage purge exemptions
 and purge locks.
 
-The server will use a customized template to submit jobs on the user's
-behalf.
+The server will be integrated with the standard resource manager to allow
+the server to submit jobs to computing resources on the user's behalf.
+
+Job Description
+^^^^^^^^^^^^^^^
+Jobs will consist of:
+
+JobID::
+    A unique job id associated with the current running {Project}
+Username::
+    The user that submitted the job
+AccountID::
+    The user's account that they want to associate with the job
+DefaultGroup::
+    The user's current default group when the job was submitted
+SubmitTime::
+    The time the job was submitted and recorded by {Project} server
+TransferType::
+    The type of transfer that is needed.  Get from HPSS.  Get from
+GridFTP.
+TransferSource::
+    A list of files to transfer from the source
+TransferDestination::
+    A location to store the desired files
+JobSubmitScript::
+    The job submission script to submit to the compute resources
+
+The remaining items are available only once a job completes:
+
+EligibleTime::
+    The time the job was made eligible to be scheduled
+StartTime::
+    The time the job was started by the {Project} server
+EndTime::
+    The time the job ended
+CompletionCode::
+    The status of the job when it completed.  Successful or failure.  This
+should be a return code with a list of all possible values.
+
 
 User Characteristics
 ~~~~~~~~~~~~~~~~~~~~
-There are 3 types of users that interact with the system: end users,
-storage coordinator, and administrators.  Each type of user will use the
-system in different ways so each one has a different set of requirements.
+There are 3 types of users that interact with the system:
 
-End users interaction will only use the client to submit, query, modify,
+. end users
+. storage coordinator APIs
+. administrators
+
+End users interaction will only use the client to submit, query, 
 and delete jobs.  The user will have the ability to search all jobs and
 query only their jobs.  
 
@@ -148,7 +244,7 @@ will have access to additional reporting and configuration commands on the
 server machine.  The configuration commands will allow the administrator to 
 configure the server with specific policies at the site location.  The
 reporting commands will allow the administrator to view reports about
-current status of the service, and view reports relevant to the daily
+current status of the service and view reports relevant to the daily
 operation of the service.
 
 Storage coordinator APIs will allow external scripts/programs to be
@@ -174,10 +270,10 @@ supports at this time.
 
 Operating Environment
 ~~~~~~~~~~~~~~~~~~~~~
-The application will be developed for a RHEL 6 x86_64.  It will use the
-RHEL6 provided software to build and run.  The application shall also
-require a MySQL database to hold configuration, historical, and current
-state information.  
+The application will be developed for a RHEL 6 x86_64.  The application
+should use the RHEL6 provided software to build and run.  
+The application shall also require a MySQL database to hold configuration,
+historical, and current state information.  
 
 Design Implementation Constraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -185,12 +281,11 @@ Design Implementation Constraints
 
 * configurable to have encrypted communication between server and client
 * configurable to have encrypted database connection
-* configurable to 
 * be SE Linux compatible (limit the amount of requirements for SE Linux to
 work correctly with the {Project}.
 
 In order to fit into NCCS infrastructure, the application shall create
-RPMs for easier integration into software management.
+RPMs for easier integration into current configuration practices at NCCS.
 
 User Documentation
 ~~~~~~~~~~~~~~~~~~
@@ -215,20 +310,20 @@ Hardware Interfaces
 ~~~~~~~~~~~~~~~~~~~
 The software shall be designed to run on an RHEL6 x86_64 machine.  The
 software will not have any designated hardware, as a result it does not
-have any direct hardware inerfaces.  All hardware interfaces is expected
+have any direct hardware interfaces.  All hardware interfaces is expected
 to be managed by the operating system.
 
 Software Interfaces
 ~~~~~~~~~~~~~~~~~~~
-The server application will communicate with the MySQL database using the
+The server application should communicate with the MySQL database using the
 MySQL connector API provided by MySQL.  
 
 Communications Interfaces
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-The API will use a Representational State Transfer (REST) API.  We have to
+The API should use a Representational State Transfer (REST) API.  We have to
 create this API from the server applciation.
 
-The client application will communicate with the server via encrypted
+The client application should communicate with the server via encrypted
 SSL.
 
 System Features
@@ -240,10 +335,15 @@ Client Application
 Submit a job
 ^^^^^^^^^^^^
 TITLE: Users need to be able to submit jobs to {Project} +
-DESC: A quick and dirty description +
-RAT: reasoning behind the functional requirement +
+DESC: A user submits their data queuing job and compute job to {Project} +
+RAT: The user needs a way to submit requests to {Project}.  This is the
+mechanism +
 DEP: None +
 
+Query a job
+^^^^^^^^^^^
+TITLE: Query a Job
+DESC: A user can query a job that belongs to them.  
 System Feature 2
 ~~~~~~~~~~~~~~~~
 TITLE: +
